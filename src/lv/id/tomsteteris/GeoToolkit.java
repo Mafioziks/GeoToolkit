@@ -1,7 +1,8 @@
 package lv.id.tomsteteris;
 
-import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -10,34 +11,43 @@ import java.util.Arrays;
 import java.util.List;
 
 public class GeoToolkit extends Thread {
-	private static GeoToolkit gt = null;
-	private long startTime = 0;
+	private static long startTime = 0;
 	
 	public static void main(String[] argv) {
 		System.out.println("Welcome!");
 		
-		if (gt == null) {
-			gt = new GeoToolkit();
-			
-			gt.start();
-		}
-	}
-	
-	public GeoToolkit() {
-		setDaemon(false);
-		gt = this;
-	}
-	
-	public void run() {
 		startTime = System.currentTimeMillis();
+	
+		InputStream input = System.in;
 		
-		while (System.currentTimeMillis() - startTime < 3000) {
+		
+		try {
+			input.available();
+			
+			char receivedChar;
+			try {
+				FileOutputStream outFile = new FileOutputStream("/home/" + System.getProperty("user.name") + "/Desktop/out.txt");
+				while ((receivedChar = (char) input.read()) != -1) {
+					outFile.write(receivedChar);
+					
+					if (receivedChar == '}') {
+						return;
+					}
+				}
+				outFile.close();
+				
+			} catch (IOException ex) {
+				ex.printStackTrace();
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.out.println("Input not available :(");
 		}
-		
+			
 		exit();
 	}
 	
-	public void exit() {
+	public static void exit() {
 		System.out.println("Exiting");
 		List<String> lines = Arrays.asList("Text example", "Exit");
 		Path file = Paths.get("deamon_thread.txt");
