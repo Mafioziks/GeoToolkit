@@ -1,10 +1,12 @@
 package lv.id.tomsteteris;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -17,26 +19,33 @@ public class GeoToolkit extends Thread {
 	private static Logger l;
 
 	public static void main(String[] argv) {
-		// TODO: Add logger
 		l = new Logger();
 		l.log("------: App started");
 		InputStream input = System.in;
 
 
 		try {
-			input.available();
+//			BufferedReader input = new BufferedReader(new InputStreamReader(System.in, "UTF-8"));
+
+//			input.available();
 
 			int length = 0;
-			String text;
+			String text, gpxFileContent;
 			FileOutputStream outFile = new FileOutputStream("/home/" + System.getProperty("user.name") + "/Desktop/out.txt");
 
+			gpxFileContent = "";
+			
 			while (true) {
 				text = "";
 				length = (int) input.read();
-				l.log("" + length);
+				
+				if (length == -1) {
+					break;
+				}
+				
 				length += 2;
 
-				while (length >= 0) {
+				while (input.available() != 0/*length >= 0*/) {
 					length--;
 					char c = (char) input.read();
 					if (c == 0) {
@@ -44,10 +53,17 @@ public class GeoToolkit extends Thread {
 					}
 
 					text += c;
-					l.log("" + c);
 				}
-
-				l.log("Text: -" + text + "-");
+				
+				if (text.contains("File End")) {
+					l.log("GPX:\n\n" + gpxFileContent + "-");
+					l.log(gpxFileContent);
+					gpxFileContent = "";
+					text = "";
+				}
+				l.log(text);
+				
+				gpxFileContent += text;
 
 				if (text.contains("exit")) {
 					break;

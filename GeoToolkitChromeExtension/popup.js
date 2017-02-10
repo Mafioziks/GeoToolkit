@@ -1,8 +1,31 @@
+var port = null;
+
 document.addEventListener('DOMContentLoaded', function() {
-//   alert('Done!');
+
 });
 
-var port = null;
+chrome.runtime.onConnect.addListener(function(extPort) {
+  console.assert(extPort.name == "sendertogps");
+  extPort.onMessage.addListener(function(msg) {
+    if (msg.status == "close"){
+      console.log("Received - close");
+      return;
+    }
+    else if (msg.status == "upload"){
+      console.log("Received - send to gps");
+      if (port == null) {
+        connect();
+      }
+      if (port != null) {
+        console.log('Sending msg');
+        port.postMessage(msg);
+        port.postMessage({action: "File End"});
+        console.log('Message sent to GPX');
+      }
+      extPort.postMessage({status: "success"});
+    }
+  });
+});
 
 function appendMessage(text) {
   document.getElementById('response').innerHTML += "<p>" + text + "</p>";
@@ -40,9 +63,9 @@ function onDisconnected() {
 function connect() {
   var hostName = "com.google.chrome.example.echo";
   port = chrome.runtime.connectNative(hostName);
-  port.onMessage.addListener(onNativeMessage);
-  port.onDisconnect.addListener(onDisconnected);
-  updateUiState();
+  // port.onMessage.addListener(onNativeMessage);
+  // port.onDisconnect.addListener(onDisconnected);
+  // updateUiState();
 }
 
 document.addEventListener('DOMContentLoaded', function () {
