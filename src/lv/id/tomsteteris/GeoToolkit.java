@@ -2,12 +2,16 @@ package lv.id.tomsteteris;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,61 +19,96 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 
+import javax.swing.JFileChooser;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
 public class GeoToolkit extends Thread {
 	private static Logger l;
 
 	public static void main(String[] argv) {
 		l = new Logger();
 		l.log("------: App started");
-		InputStream input = System.in;
 
-
-		try {
-//			BufferedReader input = new BufferedReader(new InputStreamReader(System.in, "UTF-8"));
-
-//			input.available();
-
-			int length = 0;
-			String text, gpxFileContent;
-			FileOutputStream outFile = new FileOutputStream("/home/" + System.getProperty("user.name") + "/Desktop/out.txt");
-
-			gpxFileContent = "";
-			
-			while (true) {
-				text = "";
-				length = (int) input.read();
-				
-				if (length == -1) {
-					break;
-				}
-				
-				length += 2;
-
-				while (input.available() != 0/*length >= 0*/) {
-					length--;
-					char c = (char) input.read();
-					if (c == 0) {
-						continue;
-					}
-
-					text += c;
-				}
-				
-				if (text.contains("File End")) {
-					l.log("GPX:\n\n" + gpxFileContent + "-");
-					l.log(gpxFileContent);
-					gpxFileContent = "";
-					text = "";
-				}
-				l.log(text);
-				
-				gpxFileContent += text;
-
-				if (text.contains("exit")) {
-					break;
-				}
-
+		String json = getInput();
+		l.log("Json > " + json);
+		
+//		JSON j = new JSON(json);
+		JSONObject data = new JSONObject(json);
+		
+		JFileChooser chooser = new JFileChooser(); 
+//		chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+		
+		int result = chooser.showSaveDialog(null);
+		
+		if (result == JFileChooser.APPROVE_OPTION) {
+			File file = chooser.getSelectedFile();
+			try {
+				FileOutputStream outFile = new FileOutputStream(file.getAbsoluteFile());
+//				StringEscapeUtilitils.unescapeHtml4();
+				outFile.write(
+						data.getString("gpxFile")
+							.replaceAll("&lt;", "<")
+							.replaceAll("&gt;", ">")
+							.replaceAll("&nbsp;", " ")
+							.getBytes());
+				outFile.close();
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				l.log("Error: File \"" + file.getAbsoluteFile() + "\" Not found");
+//				e.printStackTrace();
+			} catch (JSONException e) {
+				// TODO Auto-generated catch block
+				l.log("Error: Json error - " + e.getMessage());
+//				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				l.log("Error: IO error");
+//				e.printStackTrace();
 			}
+		}
+
+		exit();
+	}
+	
+	public static String getInput() {
+		String gpxFileContent = "";
+		String text;
+		int length = 0;
+		byte[] b = new byte[4];
+		ByteBuffer bb;
+		try {
+			FileOutputStream outFile = new FileOutputStream("/home/" + System.getProperty("user.name") + "/Desktop/out.txt");
+			InputStream input = System.in;
+			
+			l.log("--: Reading Starts :--");
+			text = "";
+			length = input.read(b);
+			l.log("Bytes readed >  " + length);
+			bb = ByteBuffer.wrap(b);
+			bb.order(ByteOrder.nativeOrder());
+			length = bb.getInt();
+			
+			if (length == -1) {
+				outFile.close();
+				return gpxFileContent;
+			}
+			l.log("Length > " + length);
+			BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(input, "UTF-8"));
+			while (length > 0) {
+				char c = (char) bufferedReader.read();
+				if (Character.UnicodeBlock.of(c) != Character.UnicodeBlock.BASIC_LATIN) {
+					length--;
+				}
+				length--;
+				text += c;
+			}
+
+			l.log(text);
+			
+			gpxFileContent += text;
+			
 			l.log("Loop ended");
 			outFile.close();
 		} catch (IOException e) {
@@ -83,8 +122,7 @@ public class GeoToolkit extends Thread {
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
-
-		exit();
+		return gpxFileContent;
 	}
 
 	public static void exit() {

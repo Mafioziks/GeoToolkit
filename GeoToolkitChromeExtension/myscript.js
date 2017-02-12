@@ -4,7 +4,7 @@ function showGPX() {
     var gpxFile = document.getElementById("dataString");
 
     if (gpxFile == null) {
-        setTimeout(showGPX(), 100);
+        // setTimeout(showGPX(), 100);
     } else {
         var port = chrome.runtime.connect({name: "sendertogps"});
         port.postMessage(

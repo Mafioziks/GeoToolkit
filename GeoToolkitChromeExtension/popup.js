@@ -13,6 +13,7 @@ chrome.runtime.onConnect.addListener(function(extPort) {
     }
     else if (msg.status == "upload"){
       console.log("Received - send to gps");
+      console.log(msg);
       if (port == null) {
         connect();
       }
@@ -58,19 +59,23 @@ function onNativeMessage(message) {
 function onDisconnected() {
   port = null;
   updateUiState()
+  console.log('App disconnected');
 }
 
-function connect() {
-  var hostName = "com.google.chrome.example.echo";
+function connect(env = 'app') {
+  var hostName = "lv.id.tomsteteris.geotoolkit";
   port = chrome.runtime.connectNative(hostName);
-  // port.onMessage.addListener(onNativeMessage);
-  // port.onDisconnect.addListener(onDisconnected);
-  // updateUiState();
+  console.log('Connecting to app');
+  if (env == 'ui') {
+    port.onMessage.addListener(onNativeMessage);
+    port.onDisconnect.addListener(onDisconnected);
+    updateUiState();
+  }
 }
 
 document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('connect-button').addEventListener(
-      'click', connect);
+      'click', connect('ui'));
   document.getElementById('send-message-button').addEventListener(
       'click', sendNativeMessage);
   updateUiState();
